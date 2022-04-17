@@ -8,7 +8,21 @@
 
 #include <iostream>
 
+#include "3rd-party/workflow/src/include/workflow/WFHttpServer.h"
+#include "3rd-party/CGraph/src/CGraph.h"
+
+using namespace CGraph;
+
 int main() {
-    std::cout << "hello, CGraph-NIO\n";
+    auto pipeline = GPipelineFactory::create();
+    WFHttpServer server([](WFHttpTask *task) {
+        task->get_resp()->append_output_body("<html>Hello World!</html>");
+    });
+
+    if (server.start(8888) == 0) { // start server on port 8888
+        getchar(); // press "Enter" to end.
+        server.stop();
+    }
+
     return 0;
 }
