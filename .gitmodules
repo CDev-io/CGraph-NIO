@@ -1,0 +1,6 @@
+[submodule "3rd-party/CGraph"]
+	path = 3rd-party/CGraph
+	url = git@github.com:ChunelFeng/CGraph.git
+[submodule "3rd-party/workflow"]
+	path = 3rd-party/workflow
+	url = git@github.com:sogou/workflow.git
