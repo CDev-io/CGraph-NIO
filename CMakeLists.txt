@@ -1,7 +1,13 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.5.0)
 project(CGraph-NIO)
 
 set(CMAKE_CXX_STANDARD 17)
+
+# 需要自行安装openssl库，并且提前编译workflow工程
+set(OPENSSL_ROOT_DIR "/opt/homebrew/opt/openssl")
+
+set(OPENSSL_LIB_DIR "${OPENSSL_ROOT_DIR}/lib/")
+set(OPENSSL_INC_DIR "${OPENSSL_ROOT_DIR}/include/")
 
 IF(APPLE)
     # 非mac平台，暂时不支持自动生成session信息
@@ -15,24 +21,18 @@ ELSEIF(UNIX)
 ENDIF()
 
 # 添加 workflow 相关内容
-include_directories(3rd-party/workflow/src/include/workflow/)
-include_directories(/opt/homebrew/opt/openssl/include/)
-link_libraries(/opt/homebrew/opt/openssl/lib)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/workflow/_include/workflow/)
+include_directories(${OPENSSL_INC_DIR})
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/workflow/_lib)
 
 file(GLOB_RECURSE CGRAPH_SRC_LIST "./3rd-party/CGraph/src/*.cpp")
-file(GLOB_RECURSE WF_SRC_LIST "./3rd-party/workflow/src/*.cc")
-
-list(REMOVE_ITEM WF_SRC_LIST
-        ./3rd-party/workflow/src/factory/KafkaTaskImpl.cc
-        ./3rd-party/workflow/src/client/WFKafkaClient.cc
-        ./3rd-party/workflow/src/protocol/KafkaDataTypes.cc
-        ./3rd-party/workflow/src/protocol/KafkaMessage.cc
-        ./3rd-party/workflow/src/protocol/KafkaResult.cc
-        ./3rd-party/workflow/src/kernel/IOService_linux.cc
-        )
 
 add_executable(CGraph-NIO
         ${CGRAPH_SRC_LIST}
-        ${WF_SRC_LIST}
         main.cpp
         )
+
+# 引入编译好的workflow库和ssl库的内容
+TARGET_LINK_LIBRARIES(CGraph-NIO "${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/workflow/_lib/libworkflow.a")
+TARGET_LINK_LIBRARIES(CGraph-NIO "${OPENSSL_LIB_DIR}libssl.a")    # 连接ssl库相关内容
+TARGET_LINK_LIBRARIES(CGraph-NIO "${OPENSSL_LIB_DIR}libcrypto.a")
