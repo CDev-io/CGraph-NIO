@@ -10,15 +10,19 @@
 
 #include "3rd-party/workflow/_include/workflow/WFHttpServer.h"
 #include "3rd-party/CGraph/src/CGraph.h"
+#include "3rd-party/CGraph/tutorial/MyGNode/HelloCGraphNode.h"
 
 using namespace CGraph;
 
 int main() {
+    CStatus status;
+    GElementPtr node = nullptr;
     auto pipeline = GPipelineFactory::create();
-    CStatus status = pipeline->process();    // 假装做了啥事情
-    CGRAPH_ECHO("pipeline run ...");
+    pipeline->registerGElement<HelloCGraphNode>(&node, {}, "hcg", 1);
+    pipeline->init();
 
-    WFHttpServer server([](WFHttpTask *task) {
+    WFHttpServer server([&](WFHttpTask *task) {
+        status = pipeline->run();    // 假装做了啥事情
         task->get_resp()->append_output_body("hello, CGraph-NIO...");
     });
 
@@ -27,6 +31,7 @@ int main() {
         server.stop();
     }
 
+    pipeline->destroy();
     GPipelineFactory::clear();
     return 0;
 }
