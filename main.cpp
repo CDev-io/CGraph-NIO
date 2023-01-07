@@ -6,6 +6,7 @@
 @Desc: 
 ***************************/
 
+#include "3rd-party/CGraph/src/CGraph.h"
 #include "nio/NioInclude.h"
 
 using namespace CGraph;

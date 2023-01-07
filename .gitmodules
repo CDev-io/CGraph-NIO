@@ -4,3 +4,6 @@
 [submodule "3rd-party/workflow"]
 	path = 3rd-party/workflow
 	url = git@github.com:sogou/workflow.git
+[submodule "3rd-party/libhv"]
+	path = 3rd-party/libhv
+	url = git@github.com:ithewei/libhv.git
