@@ -12,6 +12,8 @@
 #include "../../../CGraph/src/CGraph.h"
 #include "DWorkFlowParam.h"
 #include <WFHttpServer.h>
+#include <HttpMessage.h>
+#include <HttpUtil.h>
 
 const static char* WF = "workflow";
 
@@ -21,7 +23,11 @@ public:
     explicit DWFServerNode() {
         server_ = new WFHttpServer([&](WFHttpTask *task) {
             int result = serverFunction();
-            CGraph::CGRAPH_ECHO("enter WFHttpServer.");
+            const void *body;
+            size_t body_len;
+            task->get_req()->get_parsed_body(&body, &body_len);
+
+            CGraph::CGRAPH_ECHO("enter WFHttpServer [%s], len is .", (char *)body, body_len);
             task->get_resp()->append_output_body("hello, CGraph-NIO, val is " + std::to_string(result));
         });
     }
