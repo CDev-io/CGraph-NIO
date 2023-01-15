@@ -6,59 +6,46 @@
 @Desc: 
 ***************************/
 
-#include "3rd-party/CGraph/src/CGraph.h"
+#include "material.h"
 #include <WFHttpServer.h>
 
-using namespace CGraph;
-
-static const char* PARAM_KEY = "my-param";
-struct MyParam : public GParam {
-    int loop_ = 0;
-    int val_ = 0;
-    void reset() override {
-        val_ = 0;    // 计算数值复位
-        loop_++;    // 记录轮询次数
+void buildManager(GPipelineManager& manager, int size) {
+    for (int i = 0; i < size; i++) {
+        manager.add(buildPipeline());
     }
-};
+}
 
-struct MyNode : public GNode {
-    CStatus init() override {
-        return CGRAPH_CREATE_GPARAM(MyParam, PARAM_KEY)    // 创建参数
-    }
+void runServer() {
+    GPipelineManager manager;
+    int size = 3;    // 最多同时处理多少个请求
+    buildManager(manager, size);
+    manager.init();    // 初始化所有的pipeline信息
 
-    CStatus run() override {
-        auto param = CGRAPH_GET_GPARAM_WITH_NO_EMPTY(MyParam, PARAM_KEY)
-        param->val_++;    // 获取参数，并且给参数赋值
-        return CStatus();
-    }
-};
+    // 注册一个回调函数
+    WFHttpServer server([&manager] (WFHttpTask *task) {
+        auto pipeline = manager.fetch();    // 获取一个可用的pipeline
+        if (pipeline == nullptr) {
+            task->get_resp()->append_output_body("no free pipeline");
+            return;
+        }
 
-void process() {
-    auto pipeline = GPipelineFactory::create();
-    GElementPtr a, b = nullptr;
-    pipeline->registerGElement<MyNode>(&a, {}, "A");
-    pipeline->registerGElement<MyNode>(&b, {a}, "B");    // 注册一个链路信息，a->b
-    pipeline->init();
-    std::mutex mtx;
-
-    WFHttpServer server([pipeline, &mtx] (WFHttpTask *task) {
-        CGRAPH_LOCK_GUARD lk(mtx);    // 防止重复进入（这里可以优化掉么？）
-        pipeline->run();    // 执行链路逻辑，参数信息是有状态的
+        pipeline->run();
         auto param = pipeline->getGParamWithNoEmpty<MyParam>(PARAM_KEY);
-        task->get_resp()->append_output_body("val is : " + std::to_string(param->val_) + ", loop is " + std::to_string(param->loop_));
+        const std::string& response = "val = " + std::to_string(param->val_) + ", loop = " + std::to_string(param->loop_);
+        task->get_resp()->append_output_body(response);
+        manager.release(pipeline);    // 放回pipeline，供下次请求使用
     });
 
     if (server.start(8888) == 0) {
         getchar();
-        server.stop();
-        pipeline->destroy();
-        GPipelineFactory::clear();
+        server.stop();    // 结束 server
+        manager.destroy();
     }
+    GPipelineFactory::clear();    // 清空所有的pipeline信息
 }
-
 
 int main()
 {
-    process();
+    runServer();    // 执行server逻辑，内部是CGraph的 dag调度逻辑
     return 0;
 }
