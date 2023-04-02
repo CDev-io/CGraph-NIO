@@ -18,7 +18,7 @@ static const char* PARAM_KEY = "my-param";
 struct MyParam : public GParam {
     int loop_ = 0;
     int val_ = 0;
-    void reset() override {
+    void reset(const CStatus& curStatus) override {
         val_ = 0;        // 计算数值复位
         loop_++;         // 记录轮询次数
     }
@@ -41,6 +41,14 @@ public:
 GPipelinePtr buildPipeline() {
     auto pipeline = GPipelineFactory::create();
     GElementPtr a, b = nullptr;
+
+    // 设置线程池信息(可选)
+    UThreadPoolConfig config;
+    config.default_thread_size_ = 2;
+    config.max_thread_size_ = 2;
+    config.monitor_enable_ = false;
+    pipeline->setUniqueThreadPoolConfig(config);
+
     pipeline->registerGElement<MyNode>(&a, {}, "A");
     pipeline->registerGElement<MyNode>(&b, {a}, "B");    // 注册一个链路信息，a->b
     return pipeline;

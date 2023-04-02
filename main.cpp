@@ -30,6 +30,8 @@ void runServer() {
         }
 
         pipeline->run();
+
+        // 可以在pipeline执行前后，获取pipeline中参数的信息
         auto param = pipeline->getGParamWithNoEmpty<MyParam>(PARAM_KEY);
         const std::string& response = "val = " + std::to_string(param->val_) + ", loop = " + std::to_string(param->loop_);
         task->get_resp()->append_output_body(response);
